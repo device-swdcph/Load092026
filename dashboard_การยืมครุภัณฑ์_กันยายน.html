@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard การยืมครุภัณฑ์ - เดือนกันยายน</title>
+<style>
+  :root{
+    --ink:#1c2a2e; --ink-soft:#4d5d61; --ink-faint:#8a9598;
+    --paper:#f6f4ee; --card:#ffffff; --line:#dedad0;
+    --teal:#0f6e56; --coral:#d85a30; --inactive:#c9c6ba;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--paper);color:var(--ink);}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 48px;}
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:16px;flex-wrap:wrap;}
+  header h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-0.01em;}
+  header p{margin:4px 0 0;font-size:13px;color:var(--ink-soft);}
+  .meta{text-align:right;font-size:12px;color:var(--ink-faint);line-height:1.6;}
+  .meta b{color:var(--ink);}
+  .filterbar{min-height:34px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-faint);}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:16px;padding:5px 6px 5px 12px;font-size:12.5px;}
+  .chip button{border:none;background:rgba(255,255,255,.18);color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:12px;line-height:22px;padding:0;}
+  .chip button:hover{background:rgba(255,255,255,.32);}
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;}
+  @media (max-width:820px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;}
+  .card h2{margin:0 0 3px;font-size:15px;font-weight:700;}
+  .card .sub{margin:0 0 16px;font-size:12px;color:var(--ink-faint);}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-weight:700;color:var(--ink-soft);font-size:11px;letter-spacing:0.02em;padding:0 8px 8px 0;border-bottom:1.5px solid var(--ink);}
+  th.num,td.num{text-align:right;}
+  td{padding:9px 8px 9px 0;border-bottom:1px solid var(--line);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr{cursor:pointer;transition:opacity .2s;}
+  tbody tr:hover td{background:#faf9f5;}
+  tr.dim, .legend-row.dim{opacity:.35;}
+  tr.sel td{background:#eef5f2;}
+  tr:focus-visible, .legend-row:focus-visible{outline:2px solid var(--teal);outline-offset:-2px;}
+  .bar-cell{display:flex;align-items:center;gap:8px;}
+  .bar-track{flex:1;height:7px;background:#eceae2;border-radius:4px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--teal);border-radius:4px;transition:width .25s;}
+  .count-badge{font-weight:700;min-width:20px;text-align:right;}
+  .pct{font-size:11.5px;color:var(--ink-faint);min-width:30px;text-align:right;}
+  .chart-box{position:relative;height:230px;margin-bottom:14px;}
+  .chart-box.tall{height:320px;}
+  .legend{display:flex;flex-direction:column;gap:4px;}
+  .legend-row{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:3px 4px;border-radius:4px;transition:opacity .2s;}
+  .legend-row:hover{background:#faf9f5;}
+  .legend-row.sel{background:#eef5f2;}
+  .swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+  .legend-label{flex:1;color:var(--ink);}
+  .legend-val{color:var(--ink-soft);font-weight:700;}
+  .legend-row-h{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:14px;font-size:12.5px;color:var(--ink-soft);}
+  .legend-row-h span{display:flex;align-items:center;gap:6px;}
+  .hint{font-size:11.5px;color:var(--ink-faint);margin-top:4px;}
+  footer{margin-top:24px;font-size:11.5px;color:var(--ink-faint);text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Dashboard การยืมครุภัณฑ์</h1>
+      <p>โรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน — เดือนกันยายน 2569</p>
+    </div>
+    <div class="meta"><span id="meta-count"></span><br>ปรับปรุงข้อมูล: 3 ต.ค. 2569</div>
+  </header>
+
+  <div class="filterbar" id="filterbar"></div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>1. หน่วยงานและจำนวนที่ขอยืม</h2>
+      <p class="sub">จำนวนรายการยืม แยกตามหน่วยงานที่ขอยืม · คลิกแถวเพื่อกรอง</p>
+      <table>
+        <thead><tr><th>หน่วยงาน</th><th class="num">จำนวน</th><th style="width:38%">สัดส่วน</th></tr></thead>
+        <tbody id="dept-table"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>2. เครื่องมือที่ยืม</h2>
+      <p class="sub" id="equip-sub"></p>
+      <div class="chart-box"><canvas id="equipmentChart" role="img" aria-label="กราฟวงกลมแสดงสัดส่วนประเภทเครื่องมือที่ยืม"></canvas></div>
+      <div class="legend" id="equipment-legend"></div>
+    </div>
+
+    <div class="card">
+      <h2>3. เหตุผลที่ยืม (ภาพรวม)</h2>
+      <p class="sub" id="reason-sub"></p>
+      <div class="chart-box"><canvas id="reasonChart" role="img" aria-label="กราฟวงกลมแสดงสัดส่วนเหตุผลที่ยืม"></canvas></div>
+      <div class="legend" id="reason-legend"></div>
+    </div>
+
+    <div class="card">
+      <h2>4. เหตุผลที่ยืม แยกรายเครื่องมือ</h2>
+      <p class="sub">สัดส่วนเหตุผลในแต่ละประเภทเครื่องมือ · คลิกส่วนของแท่งเพื่อกรองเครื่องมือ + เหตุผล</p>
+      <div class="legend-row-h" id="bar-legend"></div>
+      <div class="chart-box tall"><canvas id="reasonByEquipChart" role="img" aria-label="กราฟแท่งซ้อนแสดงเหตุผลการยืมแยกตามประเภทเครื่องมือ"></canvas></div>
+    </div>
+  </div>
+
+  <footer>ข้อมูลจากรายงานการยืมคืนครุภัณฑ์ ระบบ RMC+ และแบบบันทึกเหตุผลการยืม · คลิกที่ตัวกรองเดิมซ้ำหรือกด ✕ เพื่อล้างตัวกรอง</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+  // ===== Row-level data (1 แถว = 1 รายการยืม) =====
+  var DATA = [
+ {
+  "id": 1,
+  "dept": "ผู้ป่วยหนัก",
+  "equip": "เครื่องตรวจคลื่นไฟฟ้าหัวใจ",
+  "reason": "ชำรุด",
+  "lent": 1
+ },
+ {
+  "id": 2,
+  "dept": "ออร์โธปิดิกส์",
+  "equip": "เครื่องกระตุกไฟฟ้าหัวใจ",
+  "reason": "ชำรุด",
+  "lent": 0
+ },
+ {
+  "id": 3,
+  "dept": "ทารกแรกเกิดระยะวิกฤตและทารกป่วย",
+  "equip": "เครื่องควบคุมอุณหภูมิทารก",
+  "reason": "ชำรุด",
+  "lent": 0
+ },
+ {
+  "id": 4,
+  "dept": "พิเศษปาริฉัตร",
+  "equip": "เครื่องควบคุมการให้สารน้ำ",
+  "reason": "ไม่เพียงพอ",
+  "lent": 0
+ },
+ {
+  "id": 5,
+  "dept": "ศัลยกรรม",
+  "equip": "เครื่องช่วยหายใจ",
+  "reason": "ไม่มีเครื่องมือ",
+  "lent": 1
+ },
+ {
+  "id": 6,
+  "dept": "อายุรกรรมหญิง",
+  "equip": "เครื่องช่วยหายใจ",
+  "reason": "ไม่มีเครื่องมือ",
+  "lent": 1
+ },
+ {
+  "id": 7,
+  "dept": "ศัลยกรรม",
+  "equip": "เครื่องช่วยหายใจ",
+  "reason": "ไม่มีเครื่องมือ",
+  "lent": 1
+ },
+ {
+  "id": 8,
+  "dept": "ศัลยกรรม",
+  "equip": "เครื่องช่วยหายใจ",
+  "reason": "ไม่มีเครื่องมือ",
+  "lent": 1
+ },
+ {
+  "id": 9,
+  "dept": "อายุรกรรมชาย",
+  "equip": "เครื่องช่วยหายใจ",
+  "reason": "ไม่มีเครื่องมือ",
+  "lent": 1
+ },
+ {
+  "id": 10,
+  "dept": "อายุรกรรมชาย",
+  "equip": "เครื่องควบคุมการให้สารน้ำ",
+  "reason": "ไม่เพียงพอ",
+  "lent": 0
+ },
+ {
+  "id": 11,
+  "dept": "ผู้คลอด",
+  "equip": "เครื่องติดตามสัญญาณชีพ",
+  "reason": "ไม่เพียงพอ",
+  "lent": 0
+ },
+ {
+  "id": 12,
+  "dept": "พิเศษพวงชมพู",
+  "equip": "เครื่องควบคุมการให้สารละลาย (กระบอกฉีด)",
+  "reason": "ไม่มีเครื่องมือ",
+  "lent": 0
+ }
+];
+
+  var EQUIP_COLORS = {
+    "เครื่องควบคุมการให้สารน้ำ":"#0f6e56",
+    "เครื่องช่วยหายใจ":"#d85a30",
+    "เครื่องส่องรักษาทารกตัวเหลือง":"#378add",
+    "เครื่องให้ออกซิเจน":"#ba7517",
+    "เครื่องตรวจคลื่นไฟฟ้าหัวใจ":"#6b5ca5",
+    "เครื่องกระตุกไฟฟ้าหัวใจ":"#a8436e",
+    "เครื่องควบคุมอุณหภูมิทารก":"#5b8c2a",
+    "เครื่องติดตามสัญญาณชีพ":"#3d5a80",
+    "เครื่องควบคุมการให้สารละลาย (กระบอกฉีด)":"#9b6a4f"
+  };
+  var REASON_COLORS = {"ไม่เพียงพอ":"#0f6e56","ไม่มีเครื่องมือ":"#d85a30","ชำรุด":"#ba7517"};
+  var TOTAL = DATA.length;
+  var LENT = DATA.filter(function(r){return r.lent > 0;}).length;
+
+  // ===== ลำดับคงที่ คำนวณครั้งเดียวจากยอดรวม unfiltered =====
+  function orderBy(key){
+    var seen = [], cnt = {};
+    DATA.forEach(function(r){ if(!(r[key] in cnt)){cnt[r[key]]=0; seen.push(r[key]);} cnt[r[key]]++; });
+    return seen.map(function(k,i){return {k:k,c:cnt[k],i:i};})
+      .sort(function(a,b){return b.c - a.c || a.i - b.i;})
+      .map(function(o){return o.k;});
+  }
+  var DEPTS = orderBy('dept'), EQUIPS = orderBy('equip'), REASONS = orderBy('reason');
+
+  // ===== สถานะตัวกรอง (active ได้ครั้งละ 1) =====
+  var filter = null; // {type:'dept'|'equip'|'reason'|'combo', dept, equip, reason}
+
+  function sameFilter(a,b){
+    return a && b && a.type===b.type && a.dept===b.dept && a.equip===b.equip && a.reason===b.reason;
+  }
+  function setFilter(f){
+    filter = sameFilter(filter,f) ? null : f;
+    render();
+  }
+  function match(r){
+    if(!filter) return true;
+    if(filter.type==='dept') return r.dept===filter.dept;
+    if(filter.type==='equip') return r.equip===filter.equip;
+    if(filter.type==='reason') return r.reason===filter.reason;
+    return r.equip===filter.equip && r.reason===filter.reason;
+  }
+  // ส่วนที่เป็นเจ้าของตัวกรองแสดงข้อมูลทั้งหมด แล้วทำให้รายการที่ไม่ได้เลือกจางลง
+  function rowsFor(section){
+    var owner = filter && ({dept:'dept',equip:'equip',reason:'reason',combo:'combo'})[filter.type];
+    if(owner===section) return DATA;
+    return DATA.filter(match);
+  }
+  function countBy(rows,key){
+    var c = {}; rows.forEach(function(r){ c[r[key]] = (c[r[key]]||0) + 1; }); return c;
+  }
+  function alpha(hex,a){
+    var n = parseInt(hex.slice(1),16);
+    return 'rgba(' + (n>>16&255) + ',' + (n>>8&255) + ',' + (n&255) + ',' + a + ')';
+  }
+  function filterLabel(){
+    if(!filter) return '';
+    if(filter.type==='dept') return 'หน่วยงาน: ' + filter.dept;
+    if(filter.type==='equip') return 'เครื่องมือ: ' + filter.equip;
+    if(filter.type==='reason') return 'เหตุผล: ' + filter.reason;
+    return filter.equip + ' + ' + filter.reason;
+  }
+  function onKey(fn){ return function(e){ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); fn(); } }; }
+
+  // ===== ส่วนที่ 1: ตารางหน่วยงาน =====
+  var deptBody = document.getElementById('dept-table');
+  var deptRows = {};
+  DEPTS.forEach(function(d){
+    var tr = document.createElement('tr');
+    tr.tabIndex = 0;
+    tr.innerHTML = '<td>' + d + '</td><td class="num count-badge"></td>' +
+      '<td><div class="bar-cell"><div class="bar-track"><div class="bar-fill"></div></div><span class="pct"></span></div></td>';
+    var act = function(){ setFilter({type:'dept', dept:d}); };
+    tr.addEventListener('click', act);
+    tr.addEventListener('keydown', onKey(act));
+    deptBody.appendChild(tr);
+    deptRows[d] = tr;
+  });
+  function renderDept(){
+    var rows = rowsFor('dept'), c = countBy(rows,'dept');
+    var total = rows.length;
+    var max = Math.max.apply(null, DEPTS.map(function(d){return c[d]||0;}).concat([1]));
+    DEPTS.forEach(function(d){
+      var tr = deptRows[d], n = c[d] || 0;
+      tr.children[1].textContent = n;
+      tr.querySelector('.bar-fill').style.width = (n/max*100) + '%';
+      tr.querySelector('.pct').textContent = total ? Math.round(n/total*100) + '%' : '0%';
+      var isSel = filter && filter.type==='dept' && filter.dept===d;
+      var dim = filter && (filter.type==='dept' ? !isSel : n===0);
+      tr.classList.toggle('dim', !!dim);
+      tr.classList.toggle('sel', !!isSel);
+    });
+  }
+
+  // ===== legend แบบคลิกได้ (ส่วน 2, 3) =====
+  function buildLegend(el, keys, colors, type){
+    var map = {};
+    keys.forEach(function(k){
+      var row = document.createElement('div');
+      row.className = 'legend-row'; row.tabIndex = 0;
+      row.innerHTML = '<span class="swatch" style="background:' + colors[k] + '"></span>' +
+        '<span class="legend-label">' + k + '</span><span class="legend-val"></span>';
+      var act = function(){ var f = {type:type}; f[type] = k; setFilter(f); };
+      row.addEventListener('click', act);
+      row.addEventListener('keydown', onKey(act));
+      el.appendChild(row); map[k] = row;
+    });
+    return map;
+  }
+
+  function makeDoughnut(canvasId, keys, colors, type){
+    return new Chart(document.getElementById(canvasId), {
+      type:'doughnut',
+      data:{ labels:keys, datasets:[{ data:keys.map(function(){return 0;}), backgroundColor:keys.map(function(k){return colors[k];}), borderColor:'#ffffff', borderWidth:2 }] },
+      options:{
+        responsive:true, maintainAspectRatio:false, cutout:'58%',
+        onClick:function(evt, els){
+          if(!els.length) return;
+          var k = keys[els[0].index], f = {type:type}; f[type] = k; setFilter(f);
+        },
+        onHover:function(evt, els){ evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:function(ctx){
+          var sum = ctx.dataset.data.reduce(function(s,v){return s+v;},0);
+          return ctx.label + ': ' + ctx.parsed + ' (' + (sum ? Math.round(ctx.parsed/sum*100) : 0) + '%)';
+        }}}}
+      }
+    });
+  }
+
+  function renderDoughnut(chart, legendMap, keys, colors, key, type, subEl, subText){
+    var rows = rowsFor(key), c = countBy(rows,key), total = rows.length;
+    var ds = chart.data.datasets[0];
+    ds.data = keys.map(function(k){return c[k]||0;});
+    ds.backgroundColor = keys.map(function(k){
+      var dim = filter && filter.type===type && filter[type]!==k;
+      return dim ? alpha(colors[k], .35) : colors[k];
+    });
+    chart.update();
+    keys.forEach(function(k){
+      var n = c[k] || 0, row = legendMap[k];
+      row.querySelector('.legend-val').textContent = n + ' (' + (total ? Math.round(n/total*100) : 0) + '%)';
+      var isSel = filter && filter.type===type && filter[type]===k;
+      var dim = filter && (filter.type===type ? !isSel : n===0);
+      row.classList.toggle('dim', !!dim);
+      row.classList.toggle('sel', !!isSel);
+    });
+    subEl.textContent = subText.replace('{n}', total);
+  }
+
+  // ===== ส่วนที่ 2: เครื่องมือ =====
+  var equipLegend = buildLegend(document.getElementById('equipment-legend'), EQUIPS, EQUIP_COLORS, 'equip');
+  var equipChart = makeDoughnut('equipmentChart', EQUIPS, EQUIP_COLORS, 'equip');
+
+  // ===== ส่วนที่ 3: เหตุผล =====
+  var reasonLegend = buildLegend(document.getElementById('reason-legend'), REASONS, REASON_COLORS, 'reason');
+  var reasonChart = makeDoughnut('reasonChart', REASONS, REASON_COLORS, 'reason');
+
+  // ===== ส่วนที่ 4: กราฟแท่งซ้อน =====
+  var barLegend = document.getElementById('bar-legend');
+  REASONS.forEach(function(r){
+    var s = document.createElement('span');
+    s.innerHTML = '<span class="swatch" style="background:' + REASON_COLORS[r] + '"></span>' + r;
+    barLegend.appendChild(s);
+  });
+  var barChart = new Chart(document.getElementById('reasonByEquipChart'), {
+    type:'bar',
+    data:{ labels:EQUIPS, datasets:REASONS.map(function(r){
+      return { label:r, data:EQUIPS.map(function(){return 0;}), backgroundColor:REASON_COLORS[r], borderRadius:4 };
+    })},
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      onClick:function(evt, els){
+        if(!els.length) return;
+        var el = els[0];
+        setFilter({type:'combo', equip:EQUIPS[el.index], reason:REASONS[el.datasetIndex]});
+      },
+      onHover:function(evt, els){ evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+      scales:{
+        x:{ stacked:true, beginAtZero:true, ticks:{ precision:0, color:'#8a9598' }, grid:{ color:'#e1e0d9' } },
+        y:{ stacked:true, ticks:{ color:'#1c2a2e', font:{size:12} }, grid:{ display:false } }
+      },
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:function(ctx){ return ctx.dataset.label + ': ' + ctx.parsed.x; } } } }
+    }
+  });
+  function renderBar(){
+    var rows = rowsFor('combo');
+    barChart.data.datasets.forEach(function(ds, di){
+      var reason = REASONS[di];
+      ds.data = EQUIPS.map(function(e){
+        return rows.filter(function(r){return r.equip===e && r.reason===reason;}).length;
+      });
+      ds.backgroundColor = EQUIPS.map(function(e){
+        var dim = filter && filter.type==='combo' && !(filter.equip===e && filter.reason===reason);
+        return dim ? alpha(REASON_COLORS[reason], .35) : REASON_COLORS[reason];
+      });
+    });
+    barChart.update();
+  }
+
+  // ===== Header meta + filter chip =====
+  function renderMeta(){
+    var meta = document.getElementById('meta-count');
+    var bar = document.getElementById('filterbar');
+    bar.innerHTML = '';
+    if(!filter){
+      meta.innerHTML = 'รายการทั้งหมด <b>' + TOTAL + '</b> รายการ (ให้ยืมแล้ว ' + LENT + ' · ขอค้าง ' + (TOTAL-LENT) + ')';
+      bar.textContent = 'คลิกตาราง กราฟ หรือคำอธิบายสี เพื่อกรองข้อมูลทุกส่วนพร้อมกัน';
+      return;
+    }
+    var shown = DATA.filter(match).length;
+    meta.innerHTML = 'แสดง <b>' + shown + '</b> จาก ' + TOTAL + ' รายการ<br>ตัวกรอง: ' + filterLabel();
+    var chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.innerHTML = '<span></span><button type="button" aria-label="ล้างตัวกรอง">✕</button>';
+    chip.firstChild.textContent = filterLabel();
+    chip.querySelector('button').addEventListener('click', function(){ filter = null; render(); });
+    bar.appendChild(chip);
+  }
+
+  function render(){
+    renderMeta();
+    renderDept();
+    renderDoughnut(equipChart, equipLegend, EQUIPS, EQUIP_COLORS, 'equip', 'equip',
+      document.getElementById('equip-sub'), 'สัดส่วนตามประเภทเครื่องมือ (จาก {n} รายการ) · คลิกเพื่อกรอง');
+    renderDoughnut(reasonChart, reasonLegend, REASONS, REASON_COLORS, 'reason', 'reason',
+      document.getElementById('reason-sub'), 'สัดส่วนเหตุผลที่ยืมของ {n} รายการ · คลิกเพื่อกรอง');
+    renderBar();
+  }
+  render();
+</script>
+</body>
+</html>
